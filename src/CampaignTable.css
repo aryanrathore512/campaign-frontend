@@ -28,3 +28,22 @@
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 }
+
+.navigation-buttons {
+  margin-top: 20px;
+}
+
+.navigation-buttons button {
+  margin-right: 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.navigation-buttons button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
