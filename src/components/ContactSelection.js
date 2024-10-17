@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import '../CampaignTable.css';
+import '../index.css';
 
-export default function ContactSelection({ handleBack, handleNext }) {
+export default function ContactSelection({ handleBack, handleNext, campaign, selectedContactIds }) {
   const [contacts, setContacts] = useState([]);
-  const [contactList, setContactList] = useState([]);
+  const [contactList, setContactList] = useState(selectedContactIds || []);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalContacts, setTotalContacts] = useState(0);
@@ -13,7 +13,11 @@ export default function ContactSelection({ handleBack, handleNext }) {
     fetchContacts();
   }, [currentPage, filters]);
 
-  const fetchContacts = () => {
+  useEffect(() => {
+    setContactList(selectedContactIds || []);
+  }, [selectedContactIds]);
+
+  function fetchContacts() {
     const query = new URLSearchParams({
       page: currentPage,
       limit: limit,
@@ -49,13 +53,13 @@ export default function ContactSelection({ handleBack, handleNext }) {
     });
   };
 
-  const handleSelectAllChange = () => {
+  function handleSelectAllChange() {
     const allContactIds = contacts.map((contact) => contact.id);
     setContactList((prevContactList) => {
       if (allContactIds.every((id) => prevContactList.includes(id))) {
         return prevContactList.filter((id) => !allContactIds.includes(id));
       } else {
-        return [...new Set([...prevContactList, ...allContactIds])]; // Merge selected contacts
+        return [...new Set([...prevContactList, ...allContactIds])];
       }
     });
   };
@@ -74,13 +78,17 @@ export default function ContactSelection({ handleBack, handleNext }) {
 
   const totalPages = Math.ceil(totalContacts / limit);
 
+  function handleNextWithSelectedContacts() {
+    handleNext(contactList);
+  };
+
   const selectedContacts = contacts.filter(contact => contactList.includes(contact.id));
   const unselectedContacts = contacts.filter(contact => !contactList.includes(contact.id));
   const combinedContacts = [...selectedContacts, ...unselectedContacts];
 
   return (
-    <div className='campaign-table'>
-      <h3>Selection of Contact</h3>
+    <div className='contact-selection-container'>
+      <h3 className='contact-selection-title'>Selection of Contact</h3>
 
       <div className="filters">
         <input
@@ -89,6 +97,7 @@ export default function ContactSelection({ handleBack, handleNext }) {
           placeholder="Filter by Name"
           value={filters.name}
           onChange={handleFilterChange}
+          className="filter-input"
         />
         <input
           type="text"
@@ -96,6 +105,7 @@ export default function ContactSelection({ handleBack, handleNext }) {
           placeholder="Filter by Email"
           value={filters.email}
           onChange={handleFilterChange}
+          className="filter-input"
         />
         <input
           type="text"
@@ -103,6 +113,7 @@ export default function ContactSelection({ handleBack, handleNext }) {
           placeholder="Filter by Age"
           value={filters.age}
           onChange={handleFilterChange}
+          className="filter-input"
         />
         <input
           type="text"
@@ -110,6 +121,7 @@ export default function ContactSelection({ handleBack, handleNext }) {
           placeholder="Filter by Address"
           value={filters.address}
           onChange={handleFilterChange}
+          className="filter-input"
         />
       </div>
 
@@ -153,23 +165,25 @@ export default function ContactSelection({ handleBack, handleNext }) {
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
+          className="pagination-button"
         >
-          Previous
+          Previous Page
         </button>
-        <span>Page {currentPage} of {totalPages}</span>
+        <span className="pagination-info">Page {currentPage} of {totalPages}</span>
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
+          className="pagination-button"
         >
-          Next
+          Next Page
         </button>
       </div>
 
       <div className="navigation-buttons">
-        <button onClick={handleBack}>
+        <button onClick={handleBack} className="navigation-button">
           Back
         </button>
-        <button onClick={handleNext}>
+        <button onClick={handleNextWithSelectedContacts} className="navigation-button">
           Next
         </button>
       </div>
