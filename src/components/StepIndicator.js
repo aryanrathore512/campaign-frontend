@@ -9,7 +9,7 @@ const steps = [
   'Summary',
 ];
 
-export default function StepIndicator({ currentStep }) {
+export default function StepIndicator({ currentStep, handleStepClick }) {
   const totalSteps = steps.length;
   const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
 
@@ -20,7 +20,11 @@ export default function StepIndicator({ currentStep }) {
         {steps.map((step, index) => {
           const isActive = currentStep >= index + 1;
           return (
-            <div key={index} className={`step ${isActive ? 'active' : ''}`}>
+            <div
+              key={index}
+              className={`step ${isActive ? 'active' : ''}`}
+              onClick={() => handleStepClick(index + 1)}
+            >
               <div className={`step-circle ${isActive ? 'active-circle' : ''}`}>
                 {index + 1}
               </div>
@@ -32,4 +36,3 @@ export default function StepIndicator({ currentStep }) {
     </div>
   );
 };
-

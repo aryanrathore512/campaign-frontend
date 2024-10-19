@@ -65,7 +65,9 @@ export default function ContactSelection({ handleBack, handleNext, campaign, sel
   };
 
   const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
   };
 
   const handleFilterChange = (e) => {
@@ -74,6 +76,7 @@ export default function ContactSelection({ handleBack, handleNext, campaign, sel
       ...prevFilters,
       [name]: value,
     }));
+
   };
 
   const totalPages = Math.ceil(totalContacts / limit);

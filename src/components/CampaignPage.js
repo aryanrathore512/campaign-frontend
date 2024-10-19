@@ -39,9 +39,15 @@ export default function CampaignPage() {
     setStep(step - 1);
   };
 
+  const handleStepClick = (clickedStep) => {
+    if (clickedStep >= 1 && clickedStep <= 5) {
+      setStep(clickedStep);
+    }
+  };
+
   return (
     <div>
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} handleStepClick={handleStepClick} />
       {step === 1 && (
         <CreateCampaign
           campaign={campaign}
@@ -59,11 +65,11 @@ export default function CampaignPage() {
       )}
       {step === 3 && (
         <ContactSelection
-        handleBack={handleBack}
-        handleNext={(selectedContactIds) => handleNext(selectedContactIds, 'contacts')}
-        campaign={campaign}
-        selectedContactIds={campaign.selectedContactIds}
-      />
+          handleBack={handleBack}
+          handleNext={(selectedContactIds) => handleNext(selectedContactIds, 'contacts')}
+          campaign={campaign}
+          selectedContactIds={campaign.selectedContactIds}
+        />
       )}
       {step === 4 && (
         <CampaignSettings

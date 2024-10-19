@@ -105,7 +105,6 @@ export default function CampaignSummary({ campaign, handleBack }) {
             {selectedContacts > 0 ? (
               campaign.selectedContactIds.map((contactId) => {
                 const contact = contacts.find((contact) => contact.id === contactId);
-                return contact ? <li key={contactId}>{contact.name}</li> : null;
               })
             ) : (
               <p>No contacts selected.</p>

@@ -14,7 +14,6 @@ code {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  background-color: #f7fafc;
   padding: 16px;
 }
 
@@ -23,7 +22,6 @@ code {
   max-width: 400px;
   padding: 24px;
   background-color: #fff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
 }
 
@@ -76,11 +74,9 @@ code {
 
 .template-selection-container {
   padding: 20px;
-  background-color: #f9f9f9;
   border-radius: 8px;
   max-width: 600px;
   margin: 0 auto;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .template-selection-title {
@@ -186,9 +182,7 @@ code {
 
 .contact-selection-container {
   padding: 16px;
-  background-color: #f7fafc;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin: 0 auto;
   max-width: 800px;
 }
@@ -363,9 +357,7 @@ code {
 
 .campaign-settings-container {
   padding: 24px;
-  background-color: #f9f9f9;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 600px;
   margin: 0 auto;
 }
@@ -457,9 +449,7 @@ code {
 
 .summary-container {
   padding: 24px;
-  background-color: #f9f9f9;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 800px;
   margin: 0 auto;
 }
@@ -525,3 +515,104 @@ code {
   outline: none;
   box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
 }
+
+.template-dropdown-container {
+  margin-bottom: 20px;
+}
+
+.dropdown-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.template-dropdown-list {
+  border: 1px solid #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.template-list-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.template-button-save,
+.template-button-add-new {
+  background-color: #28a745;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.template-button-save {
+  margin-top: 10px;
+}
+
+.template-button-add-new {
+  margin-top: 20px;
+}
+
+.template-selection-buttons {
+  margin-top: 30px;
+}
+
+.template-button,
+.form-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+
+.edit-button {
+  background-color: #ffc107;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  margin-left: 10px;
+  border-radius: 5px;
+}
+
+.template-form-container {
+  margin-bottom: 30px;
+}
+
+.template-dropdown-container {
+  margin-bottom: 20px;
+}
+
+.new-template-header {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.app-container {
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  transition: margin-left 0.3s;
+}
+
+.sidebar-collapsed .main-content {
+  margin-left: 80px;
+}
+

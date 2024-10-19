@@ -3,11 +3,12 @@ import Quill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../index.css';
 
-export default function TemplateSelection({ handleBack, handleNext, campaign, selectedTemplateIds, handleSaveDraft }) {
+export default function TemplateSelection({ handleBack, handleNext, selectedTemplateIds, handleSaveDraft }) {
   const [templates, setTemplates] = useState([]);
-  const [templateTitle, setTemplateTitle] = useState('');
-  const [templateBody, setTemplateBody] = useState('');
+  const [templateFormList, setTemplateFormList] = useState([{ title: '', body: '' }]);
   const [selectedTemplates, setSelectedTemplates] = useState(selectedTemplateIds || []);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState(null);
 
   useEffect(() => {
     fetchTemplates();
@@ -28,28 +29,24 @@ export default function TemplateSelection({ handleBack, handleNext, campaign, se
       });
   };
 
-  function handleSaveTemplate() {
-    if (!templateTitle || !templateBody) {
+  function handleSaveTemplate(index) {
+    const { title, body } = templateFormList[index];
+
+    if (!title || !body) {
       alert('Please fill in both the template name and body');
       return;
     }
 
-    const newTemplate = {
-      title: templateTitle,
-      body: templateBody,
-    };
+    const newTemplate = { title, body };
 
     fetch(`http://localhost:3000/api/templates`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTemplate),
     })
       .then((response) => response.json())
       .then((savedTemplate) => {
-        setTemplateTitle('');
-        setTemplateBody('');
+        setTemplateFormList((prevList) => prevList.map((form, idx) => (idx === index ? { title: '', body: '' } : form)));
         setTemplates((prevTemplates) => [...prevTemplates, savedTemplate]);
         setSelectedTemplates((prevIds) => [...prevIds, savedTemplate.id]);
       })
@@ -58,66 +55,136 @@ export default function TemplateSelection({ handleBack, handleNext, campaign, se
       });
   };
 
-  function handleNextWithSelectedTemplates() {
-    handleNext(selectedTemplates);
+  function handleEditTemplate(template) {
+    setEditingTemplate(template);
+    setTemplateFormList([{ title: template.title, body: template.body }]);
+  };
+
+  function handleSaveEditedTemplate() {
+    if (!editingTemplate) return;
+
+    const updatedTemplate = {
+      title: templateFormList[0].title,
+      body: templateFormList[0].body,
+    };
+
+    fetch(`http://localhost:3000/api/templates/${editingTemplate.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedTemplate),
+    })
+      .then((response) => response.json())
+      .then((updatedTemplate) => {
+        setTemplates((prevTemplates) =>
+          prevTemplates.map((template) =>
+            template.id === updatedTemplate.id ? updatedTemplate : template
+          )
+        );
+        setEditingTemplate(null);
+        setTemplateFormList([{ title: '', body: '' }]);
+      })
+      .catch((error) => {
+        console.error('Error updating template:', error);
+      });
   };
 
   function handleSelectTemplate(templateId) {
     setSelectedTemplates((prevIds) =>
-      prevIds.includes(templateId)
-        ? prevIds.filter((id) => id !== templateId)
-        : [...prevIds, templateId]
+      prevIds.includes(templateId) ? prevIds.filter((id) => id !== templateId) : [...prevIds, templateId]
     );
+  };
+
+  function toggleDropdown() {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  function addNewTemplateForm() {
+    setTemplateFormList((prevList) => [...prevList, { title: '', body: '' }]);
+  };
+
+  function handleTemplateInputChange(index, field, value) {
+    setTemplateFormList((prevList) => prevList.map((form, idx) => (idx === index ? { ...form, [field]: value } : form)));
   };
 
   return (
     <div className="template-selection-container">
       <h2 className="template-selection-title">Template Selection</h2>
-      <label className="template-selection-label">
-        Template Name:
-        <input
-          type="text"
-          value={templateTitle}
-          onChange={(e) => setTemplateTitle(e.target.value)}
-          className="template-selection-input"
-        />
-      </label>
-      <br />
-      <label className="template-selection-label">
-        Template Body:
-        <Quill
-          value={templateBody}
-          onChange={setTemplateBody}
-          className="template-selection-quill"
-        />
-      </label>
-      <br />
-      <br />
-      <button
-        className="template-button-add"
-        onClick={handleSaveTemplate}
-      >
-        Add New Template
-      </button>
-      <div className="template-selection-buttons">
-        <button onClick={handleBack} className="template-button">Back</button>
-        <button onClick={handleNextWithSelectedTemplates} className="template-button">Next</button>
+
+      <div className="template-dropdown-container">
+        <button onClick={toggleDropdown} className="dropdown-button">
+          {dropdownOpen ? 'Hide Templates 👆' : 'Show Existing Templates 👇'}
+        </button>
+        {dropdownOpen && (
+          <ul className="template-dropdown-list">
+            {templates.length > 0 ? (
+              templates.map((template) => (
+                <li key={template.id} className="template-list-item">
+                  <input
+                    type="checkbox"
+                    checked={selectedTemplates.includes(template.id)}
+                    onChange={() => handleSelectTemplate(template.id)}
+                    className="template-checkbox"
+                  />
+                  {template.title}
+                  <button
+                    onClick={() => handleEditTemplate(template)}
+                    className="edit-button"
+                  >
+                    Edit
+                  </button>
+                </li>
+              ))
+            ) : (
+              <p>No templates available</p>
+            )}
+          </ul>
+        )}
       </div>
 
-      <h3 className="template-selection-subtitle">Available Templates</h3>
-      <ul className="template-list">
-        {templates.length > 0 ? templates.map((template) => (
-          <li key={template.id} className="template-list-item">
+      {templateFormList.map((form, index) => (
+        <div key={index} className="template-form-container">
+          <h3 className="new-template-header">New Template</h3>
+          <label className="template-selection-label">
+            Template Name:
             <input
-              type="checkbox"
-              checked={selectedTemplates.includes(template.id)}
-              onChange={() => handleSelectTemplate(template.id)}
-              className="template-checkbox"
+              type="text"
+              value={form.title}
+              onChange={(e) => handleTemplateInputChange(index, 'title', e.target.value)}
+              className="template-selection-input"
             />
-            {template.title}
-          </li>
-        )) : <p>No templates available</p>}
-      </ul>
+          </label>
+          <br />
+          <label className="template-selection-label">
+            Template Body:
+            <Quill
+              value={form.body}
+              onChange={(value) => handleTemplateInputChange(index, 'body', value)}
+              className="template-selection-quill"
+            />
+          </label>
+          <br />
+          {editingTemplate ? (
+            <button className="template-button-save" onClick={handleSaveEditedTemplate}>
+              Save Changes
+            </button>
+          ) : (
+            <button className="template-button-save" onClick={() => handleSaveTemplate(index)}>
+              Save Template
+            </button>
+          )}
+        </div>
+      ))}
+
+      {!editingTemplate && (
+        <button className="template-button-add-new" onClick={addNewTemplateForm}>
+          Add New Template
+        </button>
+      )}
+
+      <div className="template-selection-buttons">
+        <button onClick={handleBack} className="template-button">Back</button>
+        <button onClick={() => handleNext(selectedTemplates)} className="form-button">Next</button>
+      </div>
     </div>
   );
 }
