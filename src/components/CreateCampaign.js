@@ -1,7 +1,7 @@
 import React from 'react';
 import '../index.css';
 
-export default function CreateCampaign({ campaign, setCampaign, handleNext }) {
+export default function CreateCampaign({ campaign, setCampaign, handleNext, handleSaveAsDraft, loading }) {
   const { name, campaign_type } = campaign;
 
   const campaignTypes = ['Email', 'SMS', 'Social Media'];
@@ -48,6 +48,14 @@ export default function CreateCampaign({ campaign, setCampaign, handleNext }) {
           </div>
 
           <div className="form-button-container">
+            <button
+              onClick={handleSaveAsDraft}
+              className="form-button draft-button"
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save as Draft'}
+            </button>
+
             <button
               onClick={handleSave}
               className="form-button"

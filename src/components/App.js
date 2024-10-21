@@ -10,26 +10,34 @@ import {
 } from "react-router-dom";
 
 export default function App() {
-  const [campaigns, setCampaigns] = useState([]);
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  const [draftCampaigns, setDraftCampaigns] = useState([]);
+  const [initiateCampaigns, setInitiateCampaigns] = useState([]);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/campaigns`)
-      .then((response) => {
+    const fetchCampaigns = async (status) => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/campaigns?status=${status}`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        return response.json();
-      })
-      .then((data) => {
-        setCampaigns(data);
-      })
-      .catch((error) => {
+        const data = await response.json();
+        return data;
+      } catch (error) {
         console.error('Error fetching campaigns:', error);
-      });
-  }, []);
+        return [];
+      }
+    };
 
-  const draftCampaigns = campaigns.filter((campaign) => campaign.status === false);
-  const initiateCampaigns = campaigns.filter((campaign) => campaign.status === true);
+    const fetchAllCampaigns = async () => {
+      const draft = await fetchCampaigns(false);
+      const initiate = await fetchCampaigns(true);
+      setDraftCampaigns(draft);
+      setInitiateCampaigns(initiate);
+    };
+
+    fetchAllCampaigns();
+  }, []);
 
   return (
     <div className="app-container">

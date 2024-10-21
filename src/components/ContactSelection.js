@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../index.css';
 
-export default function ContactSelection({ handleBack, handleNext, campaign, selectedContactIds }) {
+export default function ContactSelection({ handleBack, handleNext, handleSaveAsDraft, campaign, selectedContactIds, loading, API_BASE_URL }) {
   const [contacts, setContacts] = useState([]);
   const [contactList, setContactList] = useState(selectedContactIds || []);
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,7 +27,7 @@ export default function ContactSelection({ handleBack, handleNext, campaign, sel
       'q[address_cont]': filters.address,
     }).toString();
 
-    fetch(`http://localhost:3000/api/contacts?${query}`)
+    fetch(`${API_BASE_URL}/contacts?${query}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -76,7 +76,6 @@ export default function ContactSelection({ handleBack, handleNext, campaign, sel
       ...prevFilters,
       [name]: value,
     }));
-
   };
 
   const totalPages = Math.ceil(totalContacts / limit);
@@ -182,12 +181,41 @@ export default function ContactSelection({ handleBack, handleNext, campaign, sel
         </button>
       </div>
 
+      {contactList.length > 0 && (
+        <div>
+          <h3>Selected Contacts</h3>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedContacts.map((contact) => (
+                <tr key={contact.id}>
+                  <td>{contact.name}</td>
+                  <td>{contact.email}</td>
+                  <td>{contact.age}</td>
+                  <td>{contact.address}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="navigation-buttons">
-        <button onClick={handleBack} className="navigation-button">
+        <button onClick={handleBack} className="navigation-button" disabled={loading}>
           Back
         </button>
-        <button onClick={handleNextWithSelectedContacts} className="navigation-button">
-          Next
+        <button onClick={() => handleSaveAsDraft(contactList)} className="navigation-button" disabled={loading}>
+          {loading ? 'Saving Draft...' : 'Save as Draft'}
+        </button>
+        <button onClick={handleNextWithSelectedContacts} className="navigation-button" disabled={loading}>
+          {loading ? 'Loading...' : 'Next'}
         </button>
       </div>
     </div>

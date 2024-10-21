@@ -2,17 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../index.css';
 
-export default function CampaignSummary({ campaign, handleBack }) {
+export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraft, handleSaveCampaign, loading, API_BASE_URL }) {
   const [contacts, setContacts] = useState([]);
   const [totalContacts, setTotalContacts] = useState(0);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const query = '';
-
-    fetch(`http://localhost:3000/api/contacts?${query}`)
+    fetch(`${API_BASE_URL}/contacts`)
       .then((response) => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -25,67 +22,12 @@ export default function CampaignSummary({ campaign, handleBack }) {
       })
       .catch((error) => {
         console.error('Error fetching contacts:', error);
+        setError('Failed to load contacts.');
       });
   }, []);
 
   const selectedContacts = campaign.selectedContactIds.length || 0;
   const progress = totalContacts ? (selectedContacts / totalContacts) * 100 : 0;
-
-  function handleCreateCampaign() {
-    setLoading(true);
-
-    fetch('http://localhost:3000/api/campaigns', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...campaign, status: true }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to create campaign');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        navigate('/', { state: { message: 'Campaign created successfully!' } });
-      })
-      .catch((error) => {
-        setError(error.message);
-        console.error('Error creating campaign:', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  function handleSaveAsDraft() {
-    setLoading(true);
-
-    fetch('http://localhost:3000/api/campaigns', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...campaign, status: false }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to save draft');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        navigate('/', { state: { message: 'Campaign draft saved successfully!' } });
-      })
-      .catch((error) => {
-        setError(error.message);
-        console.error('Error saving draft:', error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
 
   return (
     <div className="summary-container">
@@ -147,13 +89,13 @@ export default function CampaignSummary({ campaign, handleBack }) {
         <button className="summary-button" onClick={handleBack} disabled={loading}>
           Back
         </button>
-        <button className="summary-button" onClick={handleSaveAsDraft} disabled={loading}>
+        <button className="form-button draft-button" onClick={handleSaveAsDraft} disabled={loading}>
           {loading ? 'Saving...' : 'Save as Draft'}
         </button>
-        <button className="summary-button" onClick={handleCreateCampaign} disabled={loading}>
-          {loading ? 'Saving...' : 'Confirm & Finish'}
+        <button className="summary-button" onClick={handleSaveCampaign} disabled={loading}>
+          {loading ? 'Creating...' : 'Confirm & Finish'}
         </button>
       </div>
     </div>
   );
-};
+}

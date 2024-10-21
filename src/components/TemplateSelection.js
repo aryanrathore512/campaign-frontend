@@ -3,7 +3,7 @@ import Quill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../index.css';
 
-export default function TemplateSelection({ handleBack, handleNext, selectedTemplateIds, handleSaveDraft }) {
+export default function TemplateSelection({ handleBack, handleNext, selectedTemplateIds, handleSaveAsDraft, loading, API_BASE_URL }) {
   const [templates, setTemplates] = useState([]);
   const [templateFormList, setTemplateFormList] = useState([{ title: '', body: '' }]);
   const [selectedTemplates, setSelectedTemplates] = useState(selectedTemplateIds || []);
@@ -39,7 +39,7 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
 
     const newTemplate = { title, body };
 
-    fetch(`http://localhost:3000/api/templates`, {
+    fetch(`${API_BASE_URL}/templates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTemplate),
@@ -68,7 +68,7 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
       body: templateFormList[0].body,
     };
 
-    fetch(`http://localhost:3000/api/templates/${editingTemplate.id}`, {
+    fetch(`${API_BASE_URL}/templates/${editingTemplate.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedTemplate),
@@ -183,7 +183,19 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
 
       <div className="template-selection-buttons">
         <button onClick={handleBack} className="template-button">Back</button>
-        <button onClick={() => handleNext(selectedTemplates)} className="form-button">Next</button>
+        <button
+          onClick={() => handleSaveAsDraft(selectedTemplates) }
+          className="form-button draft-button"
+          disabled={loading}
+        >
+          {loading ? 'Saving...' : 'Save as Draft'}
+        </button>
+        <button
+          onClick={() => handleNext(selectedTemplates)}
+          className="form-button"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
