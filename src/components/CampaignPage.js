@@ -7,7 +7,6 @@ import CampaignSettings from './CampaignSettings';
 import CampaignSummary from './CampaignSummary';
 import { useNavigate } from 'react-router-dom';
 
-
 export default function CampaignPage() {
   const navigate = useNavigate();
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
@@ -21,6 +20,7 @@ export default function CampaignPage() {
     start_time: '',
     end_time: '',
     campaign_run_time: '',
+    batch_contact: '',
   });
 
   const [step, setStep] = useState(1);

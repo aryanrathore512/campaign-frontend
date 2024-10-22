@@ -8,6 +8,11 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
   const [limit, setLimit] = useState(10);
   const [totalContacts, setTotalContacts] = useState(0);
   const [filters, setFilters] = useState({ name: '', email: '', age: '', address: '' });
+  const [selectAll, setSelectAll] = useState(false);
+  const [selectedCurrentPage, setSelectedCurrentPage] = useState(1);
+  const [selectedContactsPerPage] = useState(5);
+  const [selectedContactsData, setSelectedContactsData] = useState([]);
+  const [loadingSelected, setLoadingSelected] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -16,6 +21,14 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
   useEffect(() => {
     setContactList(selectedContactIds || []);
   }, [selectedContactIds]);
+
+  useEffect(() => {
+    if (contactList.length > 0) {
+      fetchSelectedContactsData();
+    } else {
+      setSelectedContactsData([]);
+    }
+  }, [contactList]);
 
   function fetchContacts() {
     const query = new URLSearchParams({
@@ -37,9 +50,35 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
       .then((data) => {
         setContacts(data.contacts);
         setTotalContacts(data.total);
+        const currentPageContactIds = data.contacts.map(contact => contact.id);
+        const allCurrentSelected = currentPageContactIds.every(id => contactList.includes(id));
+        setSelectAll(allCurrentSelected);
       })
       .catch((error) => {
         console.error('Error fetching contacts:', error);
+      });
+  };
+
+  function fetchSelectedContactsData() {
+    setLoadingSelected(true);
+    const query = new URLSearchParams({
+      contact_ids: contactList.join(','),
+    }).toString();
+
+    fetch(`${API_BASE_URL}/contacts/selected_contacts?${query}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setSelectedContactsData(data.contacts);
+        setLoadingSelected(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching selected contacts:', error);
+        setLoadingSelected(false);
       });
   };
 
@@ -55,18 +94,34 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
 
   function handleSelectAllChange() {
     const allContactIds = contacts.map((contact) => contact.id);
-    setContactList((prevContactList) => {
-      if (allContactIds.every((id) => prevContactList.includes(id))) {
-        return prevContactList.filter((id) => !allContactIds.includes(id));
-      } else {
-        return [...new Set([...prevContactList, ...allContactIds])];
-      }
-    });
+    const newSelectAll = !selectAll;
+    setSelectAll(newSelectAll);
+
+    if (newSelectAll) {
+      setContactList((prevContactList) => [...new Set([...prevContactList, ...allContactIds])]);
+    } else {
+      setContactList((prevContactList) => prevContactList.filter(id => !allContactIds.includes(id)));
+    }
+  };
+
+  function handleSelectAllAcrossPages() {
+    fetch(`${API_BASE_URL}/contacts?select_all=true`)
+      .then((response) => response.json())
+      .then((data) => {
+        setContactList(data.all_contact_ids);
+      })
+      .catch((error) => console.error('Error selecting all contacts:', error));
   };
 
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages) {
       setCurrentPage(newPage);
+    }
+  };
+
+  const handleSelectedPageChange = (newPage) => {
+    if (newPage > 0 && newPage <= selectedContactsTotalPages) {
+      setSelectedCurrentPage(newPage);
     }
   };
 
@@ -76,17 +131,20 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
       ...prevFilters,
       [name]: value,
     }));
+    setCurrentPage(1);
   };
 
   const totalPages = Math.ceil(totalContacts / limit);
+  const selectedContactsTotalPages = Math.ceil(selectedContactsData.length / selectedContactsPerPage);
+
+  const paginatedSelectedContacts = selectedContactsData.slice(
+    (selectedCurrentPage - 1) * selectedContactsPerPage,
+    selectedCurrentPage * selectedContactsPerPage
+  );
 
   function handleNextWithSelectedContacts() {
     handleNext(contactList);
   };
-
-  const selectedContacts = contacts.filter(contact => contactList.includes(contact.id));
-  const unselectedContacts = contacts.filter(contact => !contactList.includes(contact.id));
-  const combinedContacts = [...selectedContacts, ...unselectedContacts];
 
   return (
     <div className='contact-selection-container'>
@@ -127,13 +185,26 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
         />
       </div>
 
+      {selectAll && (
+        <a
+          href="#"
+          className="select-all-link"
+          onClick={(e) => {
+            e.preventDefault();
+            handleSelectAllAcrossPages();
+          }}
+        >
+          Select all contacts from all pages
+        </a>
+      )}
+
       <table className="table">
         <thead>
           <tr>
             <th>
               <input
                 type="checkbox"
-                checked={contacts.length > 0 && contacts.every(contact => contactList.includes(contact.id))}
+                checked={contacts.length > 0 && selectAll}
                 onChange={handleSelectAllChange}
               />
               Select All
@@ -145,7 +216,7 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
           </tr>
         </thead>
         <tbody>
-          {combinedContacts.map((contact) => (
+          {contacts.map((contact) => (
             <tr key={contact.id}>
               <td>
                 <input
@@ -171,7 +242,9 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
         >
           Previous Page
         </button>
-        <span className="pagination-info">Page {currentPage} of {totalPages}</span>
+        <span className="pagination-info">
+          Page {currentPage} of {totalPages}
+        </span>
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -184,26 +257,53 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
       {contactList.length > 0 && (
         <div>
           <h3>Selected Contacts</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Age</th>
-                <th>Address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedContacts.map((contact) => (
-                <tr key={contact.id}>
-                  <td>{contact.name}</td>
-                  <td>{contact.email}</td>
-                  <td>{contact.age}</td>
-                  <td>{contact.address}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {loadingSelected ? (
+            <div>Loading selected contacts...</div>
+          ) : (
+            <>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Age</th>
+                    <th>Address</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedSelectedContacts.map((contact) => (
+                    <tr key={contact.id}>
+                      <td>{contact.name}</td>
+                      <td>{contact.email}</td>
+                      <td>{contact.age}</td>
+                      <td>{contact.address}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="pagination">
+                <button
+                  onClick={() => handleSelectedPageChange(selectedCurrentPage - 1)}
+                  disabled={selectedCurrentPage === 1}
+                  className="pagination-button"
+                >
+                  Previous Page
+                </button>
+                <span className="pagination-info">
+                  Page {selectedCurrentPage} of {selectedContactsTotalPages}
+                  (Showing {paginatedSelectedContacts.length} of {selectedContactsData.length} selected contacts)
+                </span>
+                <button
+                  onClick={() => handleSelectedPageChange(selectedCurrentPage + 1)}
+                  disabled={selectedCurrentPage === selectedContactsTotalPages}
+                  className="pagination-button"
+                >
+                  Next Page
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 

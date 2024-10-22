@@ -6,6 +6,7 @@ export default function CampaignSettings({ handleBack, handleNext, handleSaveAsD
   const [startTime, setStartTime] = useState(campaign.start_time || '');
   const [endTime, setEndTime] = useState(campaign.end_time || '');
   const [campaignRunTime, setCampaignRunTime] = useState(campaign.campaign_run_time || '');
+  const [batchContact, setBatchContact] = useState(campaign.batch_contact || '');
   const [error, setError] = useState('');
 
   function handleSaveSettings() {
@@ -26,11 +27,17 @@ export default function CampaignSettings({ handleBack, handleNext, handleSaveAsD
       return null;
     }
 
+    if (!batchContact || batchContact <= 0) {
+      setError('Batch contact must be a positive number.');
+      return null;
+    }
+
     const settings = {
       email_limit: emailLimit,
       start_time: startTime,
       end_time: endTime,
       campaign_run_time: campaignRunTime,
+      batch_contact: batchContact,
     };
 
     setCampaign((prevCampaign) => ({
@@ -83,6 +90,16 @@ export default function CampaignSettings({ handleBack, handleNext, handleSaveAsD
           type="number"
           value={campaignRunTime}
           onChange={(e) => setCampaignRunTime(e.target.value)}
+          className="campaign-settings-input"
+        />
+      </div>
+
+      <div className="campaign-settings-field">
+        <label className="campaign-settings-label">Batch Contact: </label>
+        <input
+          type="number"
+          value={batchContact}
+          onChange={(e) => setBatchContact(e.target.value)}
           className="campaign-settings-input"
         />
       </div>

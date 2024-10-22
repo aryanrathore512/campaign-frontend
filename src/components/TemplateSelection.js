@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Quill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../index.css';
@@ -9,6 +9,9 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
   const [selectedTemplates, setSelectedTemplates] = useState(selectedTemplateIds || []);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [newTemplateAdded, setNewTemplateAdded] = useState(false);
+
+  const quillRefs = useRef([]);
 
   useEffect(() => {
     fetchTemplates();
@@ -19,7 +22,7 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
   }, [selectedTemplateIds]);
 
   function fetchTemplates() {
-    fetch(`http://localhost:3000/api/templates`)
+    fetch(`${API_BASE_URL}/templates`)
       .then((response) => response.json())
       .then((data) => {
         setTemplates(data);
@@ -100,11 +103,27 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
 
   function addNewTemplateForm() {
     setTemplateFormList((prevList) => [...prevList, { title: '', body: '' }]);
+    setNewTemplateAdded(true);
   };
 
   function handleTemplateInputChange(index, field, value) {
     setTemplateFormList((prevList) => prevList.map((form, idx) => (idx === index ? { ...form, [field]: value } : form)));
   };
+
+  function insertPlaceholder(index, placeholder) {
+    const quillEditor = quillRefs.current[index];
+    const range = quillEditor.getEditor().getSelection();
+    if (range) {
+      quillEditor.getEditor().clipboard.dangerouslyPasteHTML(range.index, `{{${placeholder}}}`);
+    }
+  }
+
+  function deleteTemplateForm(index) {
+    setTemplateFormList((prevList) => prevList.filter((_, idx) => idx !== index));
+    if (templateFormList.length === 1) {
+      setNewTemplateAdded(false);
+    }
+  }
 
   return (
     <div className="template-selection-container">
@@ -156,13 +175,27 @@ export default function TemplateSelection({ handleBack, handleNext, selectedTemp
           <br />
           <label className="template-selection-label">
             Template Body:
+            <div className="template-placeholder-options">
+              <button onClick={() => insertPlaceholder(index, 'name')} className="template-button-save">
+                Name
+              </button>
+              <button onClick={() => insertPlaceholder(index, 'address')} className="template-button-save" style={{marginLeft: "10px"}}>
+                Address
+              </button>
+            </div>
             <Quill
+              ref={(el) => (quillRefs.current[index] = el)}
               value={form.body}
               onChange={(value) => handleTemplateInputChange(index, 'body', value)}
               className="template-selection-quill"
             />
           </label>
           <br />
+          {newTemplateAdded && (
+            <button className="template-button-save" style={{marginRight: "10px"}} onClick={() => deleteTemplateForm(index)}>
+              🗑 Delete
+            </button>
+          )}
           {editingTemplate ? (
             <button className="template-button-save" onClick={handleSaveEditedTemplate}>
               Save Changes

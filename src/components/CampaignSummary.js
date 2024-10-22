@@ -82,6 +82,7 @@ export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraf
           <p><strong>Start Time:</strong> {campaign.start_time}</p>
           <p><strong>End Time:</strong> {campaign.end_time}</p>
           <p><strong>Campaign Run Time:</strong> {campaign.campaign_run_time}</p>
+          <p><strong>Campaign Batch:</strong> {campaign.batch_contact}</p>
         </div>
       </div>
 
