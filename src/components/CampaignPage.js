@@ -6,6 +6,7 @@ import ContactSelection from './ContactSelection';
 import CampaignSettings from './CampaignSettings';
 import CampaignSummary from './CampaignSummary';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from './Sidebar';
 
 export default function CampaignPage() {
   const navigate = useNavigate();
@@ -38,8 +39,9 @@ export default function CampaignPage() {
       status: false,
     };
 
-  setClicked(true);
-  setLoading(true);
+    setClicked(true);
+    setLoading(true);
+    setError(null);
 
     fetch(`${API_BASE_URL}/campaigns`, {
       method: 'POST',
@@ -50,12 +52,15 @@ export default function CampaignPage() {
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Failed to save draft');
+          return response.json().then((errorData) => {
+            throw new Error(errorData.join(', '));
+          });
         }
         return response.json();
       })
       .then((data) => {
         console.log('Draft saved successfully!');
+        alert('Draft Campaign saved successfully');
         navigate('/');
       })
       .catch((error) => {
@@ -72,6 +77,7 @@ export default function CampaignPage() {
     if (clicked) return;
     setClicked(true);
     setLoading(true);
+    setError(null);
 
     fetch(`${API_BASE_URL}/campaigns`, {
       method: 'POST',
@@ -82,7 +88,9 @@ export default function CampaignPage() {
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Failed to save draft');
+          return response.json().then((errorData) => {
+            throw new Error(errorData.join(', '));
+          });
         }
         return response.json();
       })
@@ -92,7 +100,7 @@ export default function CampaignPage() {
       })
       .catch((error) => {
         setError(error.message);
-        console.error('Error saving draft:', error);
+        console.error('Error saving campaign:', error);
       })
       .finally(() => {
         setLoading(false);
@@ -126,60 +134,64 @@ export default function CampaignPage() {
   };
 
   return (
-    <div>
-      <StepIndicator currentStep={step} handleStepClick={handleStepClick} />
-      {step === 1 && (
-        <CreateCampaign
-          campaign={campaign}
-          setCampaign={setCampaign}
-          handleNext={() => handleNext([], 'campaign')}
-          handleSaveAsDraft={handleSaveAsDraft}
-          loading={loading}
-        />
-      )}
-      {step === 2 && (
-        <TemplateSelection
-          handleBack={handleBack}
-          handleNext={(selectedTemplateIds) => handleNext(selectedTemplateIds, 'templates')}
-          campaign={campaign}
-          selectedTemplateIds={campaign.selectedTemplateIds}
-          handleSaveAsDraft={(selectedTemplateIds) => handleSaveAsDraft(selectedTemplateIds, 'templates')}
-          loading={loading}
-          API_BASE_URL={API_BASE_URL}
-        />
-      )}
-      {step === 3 && (
-        <ContactSelection
-          handleBack={handleBack}
-          handleNext={(selectedContactIds) => handleNext(selectedContactIds, 'contacts')}
-          campaign={campaign}
-          selectedContactIds={campaign.selectedContactIds}
-          handleSaveAsDraft={(selectedTemplateIds) => handleSaveAsDraft(selectedTemplateIds, 'contacts')}
-          loading={loading}
-          API_BASE_URL={API_BASE_URL}
-        />
-      )}
-      {step === 4 && (
-        <CampaignSettings
-          handleBack={handleBack}
-          handleNext={() => handleNext([], 'settings')}
-          campaign={campaign}
-          setCampaign={setCampaign}
-          handleSaveAsDraft={handleSaveAsDraft}
-          loading={loading}
-        />
-      )}
-      {step === 5 && (
-        <CampaignSummary
-          campaign={campaign}
-          handleBack={handleBack}
-          setCampaign={setCampaign}
-          handleSaveAsDraft={() => handleSaveAsDraft([], 'settings')}
-          loading={loading}
-          handleSaveCampaign={handleSaveCampaign}
-          API_BASE_URL={API_BASE_URL}
-        />
-      )}
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <Sidebar />
+      <div style={{ flex: 1, padding: '20px' }}>
+        <StepIndicator currentStep={step} handleStepClick={handleStepClick} />
+        {step === 1 && (
+          <CreateCampaign
+            campaign={campaign}
+            setCampaign={setCampaign}
+            handleNext={() => handleNext([], 'campaign')}
+            handleSaveAsDraft={handleSaveAsDraft}
+            loading={loading}
+            errorMessage={error}
+          />
+        )}
+        {step === 2 && (
+          <TemplateSelection
+            handleBack={handleBack}
+            handleNext={(selectedTemplateIds) => handleNext(selectedTemplateIds, 'templates')}
+            campaign={campaign}
+            selectedTemplateIds={campaign.selectedTemplateIds}
+            handleSaveAsDraft={(selectedTemplateIds) => handleSaveAsDraft(selectedTemplateIds, 'templates')}
+            loading={loading}
+            API_BASE_URL={API_BASE_URL}
+          />
+        )}
+        {step === 3 && (
+          <ContactSelection
+            handleBack={handleBack}
+            handleNext={(selectedContactIds) => handleNext(selectedContactIds, 'contacts')}
+            campaign={campaign}
+            selectedContactIds={campaign.selectedContactIds}
+            handleSaveAsDraft={(selectedTemplateIds) => handleSaveAsDraft(selectedTemplateIds, 'contacts')}
+            loading={loading}
+            API_BASE_URL={API_BASE_URL}
+          />
+        )}
+        {step === 4 && (
+          <CampaignSettings
+            handleBack={handleBack}
+            handleNext={() => handleNext([], 'settings')}
+            campaign={campaign}
+            setCampaign={setCampaign}
+            handleSaveAsDraft={handleSaveAsDraft}
+            loading={loading}
+          />
+        )}
+        {step === 5 && (
+          <CampaignSummary
+            campaign={campaign}
+            handleBack={handleBack}
+            setCampaign={setCampaign}
+            handleSaveAsDraft={() => handleSaveAsDraft([], 'settings')}
+            loading={loading}
+            handleSaveCampaign={handleSaveCampaign}
+            API_BASE_URL={API_BASE_URL}
+          />
+        )}
+      </div>
     </div>
   );
 }

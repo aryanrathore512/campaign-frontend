@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../index.css';
 
 export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraft, handleSaveCampaign, loading, API_BASE_URL }) {
   const [contacts, setContacts] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [totalContacts, setTotalContacts] = useState(0);
-  const navigate = useNavigate();
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -24,11 +23,27 @@ export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraf
         console.error('Error fetching contacts:', error);
         setError('Failed to load contacts.');
       });
-  }, []);
 
-  const selectedContacts = campaign.selectedContactIds.length || 0;
-  const progress = totalContacts ? (selectedContacts / totalContacts) * 100 : 0;
+    fetch(`${API_BASE_URL}/templates`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setTemplates(data);
+      })
+      .catch((error) => {
+        debugger
+        console.error('Error fetching templates:', error);
+        setError('Failed to load templates.');
+      });
+  }, [API_BASE_URL]);
 
+  const selectedContactsCount = campaign.selectedContactIds.length || 0;
+  const progress = totalContacts ? (selectedContactsCount / totalContacts) * 100 : 0;
+  console.log("My Templates", templates);
   return (
     <div className="summary-container">
       <h2 className="summary-title">Campaign Summary</h2>
@@ -43,15 +58,6 @@ export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraf
 
         <div className="summary-box">
           <h3>Selected Contacts</h3>
-          <ul>
-            {selectedContacts > 0 ? (
-              campaign.selectedContactIds.map((contactId) => {
-                const contact = contacts.find((contact) => contact.id === contactId);
-              })
-            ) : (
-              <p>No contacts selected.</p>
-            )}
-          </ul>
           <div className="progress-bar-container-summary">
             <div
               className="progress-bar-summary"
@@ -59,7 +65,7 @@ export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraf
             />
           </div>
           <p>
-            {selectedContacts} of {totalContacts} contacts selected
+            {selectedContactsCount} of {totalContacts} contacts selected
           </p>
         </div>
 
@@ -67,9 +73,14 @@ export default function CampaignSummary({ campaign, handleBack, handleSaveAsDraf
           <h3>Selected Templates</h3>
           <ul>
             {campaign.selectedTemplateIds.length > 0 ? (
-              campaign.selectedTemplateIds.map((templateId) => (
-                <li key={templateId}>Template ID: {templateId}</li>
-              ))
+              campaign.selectedTemplateIds.map((templateId) => {
+                const template = templates?.find((template) => template.id === Number(templateId));
+                return template ? (
+                  <li key={template.id}>Template Name: {template.title}</li>
+                ) : (
+                  <li key={templateId}>Template not found for ID: {templateId}</li>
+                );
+              })
             ) : (
               <p>No templates selected.</p>
             )}
