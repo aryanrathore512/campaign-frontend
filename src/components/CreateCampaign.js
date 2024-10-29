@@ -8,14 +8,13 @@ export default function CreateCampaign({ campaign, setCampaign, handleNext, hand
   const [showErrors, setShowErrors] = useState(false);
   console.log(errorMessage);
   function handleSave() {
-    setShowErrors(true); // Show errors when Next is clicked
+    setShowErrors(true);
 
-    // Check if the name and campaign type are valid
     if (!name || !campaign_type) {
-      return; // Prevent proceeding if validation fails
+      return;
     }
 
-    handleNext(); // Proceed to the next step
+    handleNext();
   }
 
   const isNameValid = name.trim() !== '';

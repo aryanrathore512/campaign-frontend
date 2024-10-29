@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 import '../index.css';
 
-export default function ContactSelection({ handleBack, handleNext, handleSaveAsDraft, campaign, selectedContactIds, loading, API_BASE_URL }) {
+export default function ContactSelection({ handleBack, handleNext, handleSaveAsDraft, campaign, selectedContactIds, loading, API_BASE_URL, errorMessage }) {
   const [contacts, setContacts] = useState([]);
   const [contactList, setContactList] = useState(selectedContactIds || []);
   const [currentPage, setCurrentPage] = useState(1);
@@ -9,10 +12,35 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
   const [totalContacts, setTotalContacts] = useState(0);
   const [filters, setFilters] = useState({ name: '', email: '', age: '', address: '' });
   const [selectAll, setSelectAll] = useState(false);
-  const [selectedCurrentPage, setSelectedCurrentPage] = useState(1);
-  const [selectedContactsPerPage] = useState(5);
   const [selectedContactsData, setSelectedContactsData] = useState([]);
   const [loadingSelected, setLoadingSelected] = useState(false);
+  const gridRef = useRef(null);
+
+  const columnDefs = [
+    {
+      headerCheckboxSelection: true,
+      checkboxSelection: true,
+      width: 50,
+    },
+    { field: 'name', headerName: 'Name', filter: true },
+    { field: 'email', headerName: 'Email', filter: true },
+    { field: 'age', headerName: 'Age', filter: true },
+    { field: 'address', headerName: 'Address', filter: true }
+  ];
+
+  const selectedColumnDefs = [
+    { field: 'name', headerName: 'Name' },
+    { field: 'email', headerName: 'Email' },
+    { field: 'age', headerName: 'Age' },
+    { field: 'address', headerName: 'Address' }
+  ];
+
+  const defaultColDef = {
+    sortable: true,
+    resizable: true,
+    flex: 1,
+    minWidth: 100,
+  };
 
   useEffect(() => {
     fetchContacts();
@@ -30,6 +58,21 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
     }
   }, [contactList]);
 
+  useEffect(() => {
+    if (gridRef.current && gridRef.current.api) {
+      const nodes = gridRef.current.api.getRenderedNodes();
+      nodes.forEach(node => {
+        if (contactList.includes(node.data.id)) {
+          node.setSelected(true);
+        }
+      });
+
+      const currentPageContactIds = contacts.map(contact => contact.id);
+      const allCurrentSelected = currentPageContactIds.every(id => contactList.includes(id));
+      setSelectAll(allCurrentSelected);
+    }
+  }, [contacts, contactList]);
+
   function fetchContacts() {
     const query = new URLSearchParams({
       page: currentPage,
@@ -42,22 +85,17 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
 
     fetch(`${API_BASE_URL}/contacts?${query}`)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
       .then((data) => {
         setContacts(data.contacts);
         setTotalContacts(data.total);
-        const currentPageContactIds = data.contacts.map(contact => contact.id);
-        const allCurrentSelected = currentPageContactIds.every(id => contactList.includes(id));
-        setSelectAll(allCurrentSelected);
       })
       .catch((error) => {
         console.error('Error fetching contacts:', error);
       });
-  };
+  }
 
   function fetchSelectedContactsData() {
     setLoadingSelected(true);
@@ -67,9 +105,7 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
 
     fetch(`${API_BASE_URL}/contacts/selected_contacts?${query}`)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
       .then((data) => {
@@ -80,28 +116,25 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
         console.error('Error fetching selected contacts:', error);
         setLoadingSelected(false);
       });
+  }
+
+  const onSelectionChanged = (event) => {
+    const selectedRows = event.api.getSelectedRows();
+    const selectedIds = selectedRows.map(row => row.id);
+    const currentPageContactIds = contacts.map(contact => contact.id);
+    const unchangedSelections = contactList.filter(id => !currentPageContactIds.includes(id));
+    const newSelections = selectedIds.filter(id => currentPageContactIds.includes(id));
+    setContactList([...unchangedSelections, ...newSelections]);
+    setSelectAll(selectedRows.length === contacts.length);
   };
 
-  const handleCheckboxChange = (contactId) => {
-    setContactList((prevContactList) => {
-      if (prevContactList.includes(contactId)) {
-        return prevContactList.filter((id) => id !== contactId);
-      } else {
-        return [...prevContactList, contactId];
+  const onGridReady = (params) => {
+    const nodes = params.api.getRenderedNodes();
+    nodes.forEach(node => {
+      if (contactList.includes(node.data.id)) {
+        node.setSelected(true);
       }
     });
-  };
-
-  function handleSelectAllChange() {
-    const allContactIds = contacts.map((contact) => contact.id);
-    const newSelectAll = !selectAll;
-    setSelectAll(newSelectAll);
-
-    if (newSelectAll) {
-      setContactList((prevContactList) => [...new Set([...prevContactList, ...allContactIds])]);
-    } else {
-      setContactList((prevContactList) => prevContactList.filter(id => !allContactIds.includes(id)));
-    }
   };
 
   function handleSelectAllAcrossPages() {
@@ -111,17 +144,11 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
         setContactList(data.all_contact_ids);
       })
       .catch((error) => console.error('Error selecting all contacts:', error));
-  };
+  }
 
   const handlePageChange = (newPage) => {
-    if (newPage > 0 && newPage <= totalPages) {
+    if (newPage > 0 && newPage <= Math.ceil(totalContacts / limit)) {
       setCurrentPage(newPage);
-    }
-  };
-
-  const handleSelectedPageChange = (newPage) => {
-    if (newPage > 0 && newPage <= selectedContactsTotalPages) {
-      setSelectedCurrentPage(newPage);
     }
   };
 
@@ -131,24 +158,26 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
       ...prevFilters,
       [name]: value,
     }));
+  };
+
+  const onFilterChanged = (params) => {
+    const filterModel = params.api.getFilterModel();
+    setFilters({
+      name: filterModel.name?.filter || '',
+      email: filterModel.email?.filter || '',
+      age: filterModel.age?.filter || '',
+      address: filterModel.address?.filter || '',
+    });
     setCurrentPage(1);
   };
 
-  const totalPages = Math.ceil(totalContacts / limit);
-  const selectedContactsTotalPages = Math.ceil(selectedContactsData.length / selectedContactsPerPage);
-
-  const paginatedSelectedContacts = selectedContactsData.slice(
-    (selectedCurrentPage - 1) * selectedContactsPerPage,
-    selectedCurrentPage * selectedContactsPerPage
-  );
-
   function handleNextWithSelectedContacts() {
     handleNext(contactList);
-  };
+  }
 
   return (
-    <div className='contact-selection-container'>
-      <h3 className='contact-selection-title'>Selection of Contact</h3>
+    <div className="contact-selection-container">
+      <h3 className="contact-selection-title">Selection of Contact</h3>
 
       <div className="filters">
         <input
@@ -198,41 +227,21 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
         </a>
       )}
 
-      <table className="table">
-        <thead>
-          <tr>
-            <th>
-              <input
-                type="checkbox"
-                checked={contacts.length > 0 && selectAll}
-                onChange={handleSelectAllChange}
-              />
-              Select All
-            </th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Age</th>
-            <th>Address</th>
-          </tr>
-        </thead>
-        <tbody>
-          {contacts.map((contact) => (
-            <tr key={contact.id}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={contactList.includes(contact.id)}
-                  onChange={() => handleCheckboxChange(contact.id)}
-                />
-              </td>
-              <td>{contact.name}</td>
-              <td>{contact.email}</td>
-              <td>{contact.age}</td>
-              <td>{contact.address}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="ag-theme-alpine" style={{ height: '400px', width: '100%' }}>
+        <AgGridReact
+          ref={gridRef}
+          columnDefs={columnDefs}
+          rowData={contacts}
+          defaultColDef={defaultColDef}
+          rowSelection="multiple"
+          onSelectionChanged={onSelectionChanged}
+          onGridReady={onGridReady}
+          onFilterChanged={onFilterChanged}
+          pagination={true}
+          paginationPageSize={limit}
+          suppressPaginationPanel={true}
+        />
+      </div>
 
       <div className="pagination">
         <button
@@ -243,11 +252,11 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
           Previous Page
         </button>
         <span className="pagination-info">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {Math.ceil(totalContacts / limit)}
         </span>
         <button
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={currentPage === Math.ceil(totalContacts / limit)}
           className="pagination-button"
         >
           Next Page
@@ -256,53 +265,19 @@ export default function ContactSelection({ handleBack, handleNext, handleSaveAsD
 
       {contactList.length > 0 && (
         <div>
-          <h3>Selected Contacts</h3>
+          <h3>Selected Contacts ({contactList.length})</h3>
           {loadingSelected ? (
             <div>Loading selected contacts...</div>
           ) : (
-            <>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Age</th>
-                    <th>Address</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedSelectedContacts.map((contact) => (
-                    <tr key={contact.id}>
-                      <td>{contact.name}</td>
-                      <td>{contact.email}</td>
-                      <td>{contact.age}</td>
-                      <td>{contact.address}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="pagination">
-                <button
-                  onClick={() => handleSelectedPageChange(selectedCurrentPage - 1)}
-                  disabled={selectedCurrentPage === 1}
-                  className="pagination-button"
-                >
-                  Previous Page
-                </button>
-                <span className="pagination-info">
-                  Page {selectedCurrentPage} of {selectedContactsTotalPages}
-                  (Showing {paginatedSelectedContacts.length} of {selectedContactsData.length} selected contacts)
-                </span>
-                <button
-                  onClick={() => handleSelectedPageChange(selectedCurrentPage + 1)}
-                  disabled={selectedCurrentPage === selectedContactsTotalPages}
-                  className="pagination-button"
-                >
-                  Next Page
-                </button>
-              </div>
-            </>
+            <div className="ag-theme-alpine" style={{ height: '300px', width: '100%' }}>
+              <AgGridReact
+                columnDefs={selectedColumnDefs}
+                rowData={selectedContactsData}
+                defaultColDef={defaultColDef}
+                pagination={true}
+                paginationPageSize={5}
+              />
+            </div>
           )}
         </div>
       )}

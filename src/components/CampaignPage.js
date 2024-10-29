@@ -157,6 +157,7 @@ export default function CampaignPage() {
             handleSaveAsDraft={(selectedTemplateIds) => handleSaveAsDraft(selectedTemplateIds, 'templates')}
             loading={loading}
             API_BASE_URL={API_BASE_URL}
+            errorMessage={error}
           />
         )}
         {step === 3 && (
@@ -178,6 +179,7 @@ export default function CampaignPage() {
             setCampaign={setCampaign}
             handleSaveAsDraft={handleSaveAsDraft}
             loading={loading}
+            errorMessage={error}
           />
         )}
         {step === 5 && (

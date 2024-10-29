@@ -11,10 +11,8 @@ import {
 
 export default function App() {
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
-  const [draftCampaigns, setDraftCampaigns] = useState([]);
-  const [initiateCampaigns, setInitiateCampaigns] = useState([]);
-  const [totalDraft, setTotalDraft] = useState(0);
-  const [totalInitiate, setTotalInitiate] = useState(0);
+  const [campaigns, setCampaigns] = useState([]);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -28,17 +26,15 @@ export default function App() {
         return response.json();
       })
       .then((data) => {
-        setDraftCampaigns(data.draft_campaigns);
-        setInitiateCampaigns(data.initiate_campaigns);
-        setTotalDraft(data.total_draft_campaigns);
-        setTotalInitiate(data.total_initiate_campaigns);
+        setCampaigns(data.all_campaigns);
+        setTotalCampaigns(data.total_campaigns);
       })
       .catch((error) => {
         console.error('Error fetching campaigns:', error);
         setError('Failed to load campaigns.');
       });
   };
-  console.log(draftCampaigns);
+
   useEffect(() => {
     fetchCampaigns(currentPage);
   }, [currentPage, perPage]);
@@ -52,9 +48,19 @@ export default function App() {
       <Sidebar />
       <div className="main-content">
         <Routes>
-          <Route path="/" element={<Home draftCampaigns={draftCampaigns} initiateCampaigns={initiateCampaigns}
-                totalDraft={totalDraft} totalInitiate={totalInitiate}
-                currentPage={currentPage} handlePageChange={handlePageChange} />} />
+          <Route
+            path="/"
+            element={
+              <Home
+                campaigns={campaigns}
+                total={totalCampaigns}
+                currentPage={currentPage}
+                perPage={perPage}
+                API_BASE_URL={API_BASE_URL}
+                handlePageChange={handlePageChange}
+              />
+            }
+          />
           <Route path="/create-campaign" element={<CreateCampaignPage />} />
         </Routes>
       </div>
@@ -62,7 +68,7 @@ export default function App() {
   );
 }
 
-function Home({ draftCampaigns, initiateCampaigns, totalDraft, totalInitiate, currentPage, handlePageChange }) {
+function Home({ campaigns, total, currentPage, perPage, API_BASE_URL, handlePageChange }) {
   const navigate = useNavigate();
 
   const handleCreateCampaign = () => {
@@ -74,8 +80,14 @@ function Home({ draftCampaigns, initiateCampaigns, totalDraft, totalInitiate, cu
       <button className="btn btn-primary button-create" onClick={handleCreateCampaign}>
         Create New Campaign
       </button>
-      <CampaignTable name="Draft" campaigns={draftCampaigns} total={totalDraft} currentPage={currentPage} handlePageChange={handlePageChange} />
-      <CampaignTable name="Initiate" campaigns={initiateCampaigns} total={totalInitiate} currentPage={currentPage} handlePageChange={handlePageChange} />
+      <CampaignTable
+        campaigns={campaigns}
+        total={total}
+        currentPage={currentPage}
+        perPage={perPage}
+        API_BASE_URL={API_BASE_URL}
+        handlePageChange={handlePageChange}
+      />
     </div>
   );
 }
